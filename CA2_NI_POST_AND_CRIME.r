@@ -101,24 +101,24 @@ find_a_postcode <- function(random_crime_sample_no_PC){
   # Remove all the rows with NA's
   Postcode_Summary <- na.omit(Postcode_Summary)
   
-  #Getting the maximum value for each location giving us the most popular postcode
+  #Getting the maximum value for each location giving the most popular postcode
   Most_Freq_Address_by_Postcode<-summaryBy(Primary.Thorfare.length ~ Primary.Thorfare, data = Postcode_Summary,FUN = max)
   Most_Freq_Address_by_Postcode$Postcode<-""
   # Create a for loop to iterate though the postcode and crime data
-  # so that every entry primary thorfare has a postcode
+  # so that every entry primary thorfare has a postcode attached
   for (i in 1:nrow(Most_Freq_Address_by_Postcode)){
-    #
+    #Create temporary variable which reads the dataframe Most_Freq_Address_by_Postcode and outputs the primary thorfare 
     temp_Primary.Thorfare <- as.character(Most_Freq_Address_by_Postcode[i,c("Primary.Thorfare")])
+    #Create temporary varable which outputs the corresponding value of the count of Primary thorfare
     temp_Primary.Thorfare.length.max <- as.character(Most_Freq_Address_by_Postcode[i,c("Primary.Thorfare.length.max")])
+    # Using the postcode_summary join the postcode data to the crime data by Primary Thorfare and max length
     temp_Postcode <- as.character(Postcode_Summary[which(Postcode_Summary$Primary.Thorfare==temp_Primary.Thorfare &
-                                                      Postcode_Summary$Primary.Thorfare.length==temp_Primary.Thorfare.length.max),c("Postcode")])
-    # if there are postcodes that have the same frequency of occurance take the first one
+                                                   Postcode_Summary$Primary.Thorfare.length==temp_Primary.Thorfare.length.max),c("Postcode")])
+    # If multiple postcodes appear with the same length.max, choose the first one
     Most_Freq_Address_by_Postcode[i,c("Postcode")]<-temp_Postcode[1]
     # Print the progress of the for loop as a percentage
     print(paste0((i/nrow(Most_Freq_Address_by_Postcode)*100),"%"))
-    
-  }
-  
+    }
   return(Most_Freq_Address_by_Postcode)  
 }
 
@@ -148,12 +148,17 @@ library(dplyr)
 # Sort/filter the data where Postcode contains the postcode BT1.
 chart_data <- arrange(chart_data[grepl("BT1",chart_data$Postcode),],Postcode) 
 # Creata a dataframe called chart_data_summary and create a summary by crime type
-chart_data_summary <- as.data.frame(summary(chart_data$Crime.type))
+chart_data_summary <- summaryBy(data = chart_data, Crime.type ~ Crime.type,FUN=length)
 str(chart_data_summary)
 chart_data_summary
+str(chart_data_summary)
 
-# Create a bar graph with the crime lables rotated by 35 deg and reduce the size of the text
-bar_chart <- barplot(chart_data_summary[,1], col='red' , las=1, names.arg="",main = "Crime Summary for Postcode BT1",
-                     ylab="Crime Count")
-text(a[,1], -3.7, srt = 35, adj= 1, xpd = TRUE, labels = rownames(chart_data_summary)  , cex=.61)
-
+# Create a bar graph using ggplot
+ggplot(data=chart_data_summary,aes(Crime.type,Crime.type.length))+
+  theme(panel.grid.minor = element_line(colour = "grey"), plot.title = element_text(size = rel(1)),axis.text.x = element_text(angle=90, vjust=1), strip.text.x = element_text(size = 12, colour = "black", face = "bold")) +  
+  geom_point(alpha = 0.6, position = position_jitter(w = 0.1, h = 0.0), aes(colour=factor(Crime.type)), size =4)+
+  geom_bar(stat="identity",fill="steelblue")+
+  ggtitle("Crime Summary for Postcode BT1") +
+  scale_size_area() + 
+  xlab("Crime Type")+ 
+  ylab("Crime Count") 
